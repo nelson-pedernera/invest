@@ -1,0 +1,174 @@
+---
+title: "Salarios"
+author: "Podemos Aprender"
+date: "October 3, 2018"
+output:
+  html_document:
+    theme: sandstone
+---
+
+Contacto: https://pizarra.podemosaprender.org/2018/04/contacto.html
+
+# BORRADOR
+
+__REVISAR__ por que la serie de salario crece taaan rapido, el aumento NO PARECE real... el poder de compra en 2015 era el TRIPLE que en 2005? (ver último gráfico, comparar con link eppa)
+
+Agregar datos de ingresos de la EPH [https://www.indec.gob.ar/informacion-de-archivo.asp?solapa=6]
+
+¿Como le fue a los salarios comparados con el dolar y la inflación?
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, include = FALSE, message=FALSE, warning=FALSE)
+```
+
+```{r}
+# funciones y datos comunes
+source("libinvest.R")
+```
+
+## Como evolucionan en el tiempo
+
+```{r include=TRUE}
+pUSDMes <- pUSDBcra %>% 
+	mutate(fecha=as.Date(format(fecha,"%Y-%m-01"))) %>% 
+	group_by(fecha) %>% 
+	summarize(usd=max(precio))
+
+pCERMes <- pCER %>% 
+	mutate(fecha=as.Date(format(fecha,"%Y-%m-01"))) %>% 
+	group_by(fecha) %>% 
+	summarize(cer=max(precio))
+
+diaIgual <- as.Date("2018-01-01")
+fCER <- as.numeric(pUSDMes[pUSDMes$fecha==diaIgual,"usd"]/pCERMes[pCERMes$fecha==diaIgual,"cer"])
+fSalario <- as.numeric(pUSDMes[pUSDMes$fecha==diaIgual,"usd"]/pSalarios[pSalarios$fecha==diaIgual,"pregistrado"])
+
+pdatos <- left_join(pSalarios,pUSDMes,by=c("fecha")) %>%
+			left_join(pCERMes,by=c("fecha")) %>%
+			mutate(salario=pregistrado*fSalario) %>%
+			mutate(cer=cer*fCER)
+#A: tengo p con valores para salario, dolar y cer=inflacion
+
+							 
+p	<- pdatos %>% tidyr::gather("id","pesos",salario,cer,usd)  %>%
+  ggplot(.,aes(x=fecha,y=pesos, color=id)) +
+	scale_color_manual(values=c("red","blue","green")) +
+  geom_line() +
+	ggtitle(paste("Si el salario, el cer y el dolar valieran lo mismo el día ",diaIgual))
+
+ggplotly(p) %>% layout(legend = list(orientation = "h"))
+```
+
+Podés poner el mouse sobre el gráfico para ver los valores.
+
+Si mirás la pendiente vas a notar que
+
+* Por bastantes años el salario creció igual o más que la inflación (la línea sube más rápido), y más que el dolar,
+o sea que aumentó su poder de compra tanto en bienes como en dólares.
+
+* Algunos tramos de "dólar barato", que crecía menos que la inflación, a veces por bastante tiempo, seguidos de devaluaciones bruscas para emparejarse con la inflación (tipo de cambio real) ej en enero 2014, la de enero 2015 fue excesiva (el blue muy por encima del contado con liqui) y en diciembre 2016 se emparejó
+Ver por ejemplo [https://www.cronista.com/finanzasmercados/-El-atraso-del-tipo-de-cambio-real-paso-del-45-al-30-20140129-0051.html]
+
+* Los resultados son similares a [http://eppa.com.ar/5707-2/]
+
+* Ver también [https://www.lanacion.com.ar/1928213-que-paso-y-que-pasa-con-los-salarios-y-la-inflacion] y links y [https://www.cronista.com/opinion/La-evolucion-del-salario-real-en-la-Argentina-20121022-0046.html]
+
+```{r include=TRUE}
+p <- pdatos %>% 
+		mutate(salario_en_usd= salario/usd) %>%
+		mutate(salario_en_ipc= salario/cer) %>%
+		tidyr::gather("id","canasta",salario_en_usd,salario_en_ipc)  %>%
+		ggplot(.,aes(x=fecha,y=canasta,color=id)) +
+			scale_color_manual(values=c("red","green")) +
+  		geom_line() +
+			ggtitle(paste("Poder de compra asumiendo coinciden en ",diaIgual))
+
+ggplotly(p)
+```
+
+## ¿Cómo se distribuyó? 
+
+Para analizar ej. ventas probablemente sea mejor fuente al Encuesta Permanente de Hogares (EPH)
+
+```{r include=TRUE}
+segmentoEPH <- 
+	left_join( 
+		dEPH15Caba %>% filter(as.numeric(decil)>=7),
+		pUSDMes, by= "fecha") %>%
+	mutate(ingreso_medio_usd= Media /usd)
+
+
+p <- segmentoEPH %>% 
+		ggplot(.,aes(x=fecha,y=ingreso_medio_usd,color=decil)) +
+  		geom_line() +
+			ggtitle(paste("Ingreso medio per capita en dolares por decil de la EPH CABA"))
+
+ggplotly(p)
+```
+
+```{r}
+for (d in 7:10) {
+	idx <- segmentoEPH$decil==d
+	segmentoEPH$tasa[idx] <- append(diff(segmentoEPH$ingreso_medio_usd[idx]),0,after=0)/segmentoEPH$ingreso_medio_usd[idx]
+}
+
+p <- segmentoEPH %>% 
+		ggplot(.,aes(x=fecha,y=tasa,fill=decil)) +
+  		geom_bar(stat="identity", position="dodge") +
+			ggtitle(paste("Tasa incremento ingreso medio per capita en dolares por decil de la EPH CABA"))
+
+ggplotly(p)
+
+```
+
+Tomando como 100 alguna fecha
+```{r}
+segmentoEPH <- 
+	left_join( 
+		dEPH15Caba %>% filter(as.numeric(decil)>=1),
+		pUSDMes, by= "fecha") %>%
+	mutate(ingreso_medio_usd= Media /usd)
+
+f0= min(segmentoEPH$fecha)
+
+
+for (d in 1:10) {
+	v0 <- segmentoEPH[segmentoEPH$decil==d & segmentoEPH$fecha==f0,"ingreso_medio_usd"]
+	idx <- segmentoEPH$decil==d
+	segmentoEPH$cte[idx] <- segmentoEPH$ingreso_medio_usd[idx]/v0
+}
+
+p <- segmentoEPH %>% 
+		ggplot(.,aes(x=fecha,y=cte,color=decil)) +
+  		geom_line() +
+			ggtitle(paste("Crecimiento del ingreso medio per capita en dolares por decil de la EPH CABA\n",f0,"=1"))+
+			ylab("variacion del ingreso en USD")
+
+ggplotly(p)
+```
+
+```{r include=TRUE}
+segmentoEPH <- 
+	left_join( 
+		dEPH15Caba %>% filter(as.numeric(decil)>=7),
+		pCERMes, by= "fecha") %>%
+	mutate(ingreso_medio_constante= Media/cer)
+
+
+p <- segmentoEPH %>% 
+		ggplot(.,aes(x=fecha,y=ingreso_medio_constante,color=decil)) +
+  		geom_line() +
+			ggtitle(paste("Ingreso medio per capita ajustado por CER por decil de la EPH CABA"))
+
+ggplotly(p)
+```
+
+
+## Fuentes: 
+
+Elaboracion propia a partir de
+
+* Salarios hasta 2016 ``r ISalarios_url``
+* Salarios desde 2016 ``r ISalariosLast_url``
+* Inflacion y CER ``r TcCER_url``
+* Dólar ``r TcUSDHistBcra_url``

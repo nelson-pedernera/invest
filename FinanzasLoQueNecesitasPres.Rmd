@@ -1,0 +1,233 @@
+---
+title: "Finanzas,<br>lo que necesitas saber"
+author: "Podemos Aprender"
+date: "October 25, 2018"
+output: 
+  ioslides_presentation:
+    logo: podemos_regadera.icon.png
+    css: styles.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE)
+```
+
+```{r, include=FALSE}
+source("libinvest.R") # funciones y datos comunes
+```
+
+# ¿Qué vamos a hacer hoy?
+
+0. Podemos Aprender (juntos)
+1. Datos para ganar
+2. ¿Aumenta o se devalúa?
+3. ¡Cashflow o muerte!.
+4. Modelos, juegos y dinero.
+5. __Con tus propias manos:__ BI, Marketing, Inversiones y modelos.
+
+## Podemos Aprender (juntos)
+
+- Es un __club__, somos __pares__, sin fin de lucro.
+- Nos preguntamos y enseñamos  
+(como podemos, no hay garantía)
+- Colaboramos, nos pasamos contactos e ideas, etc.
+
+__Poder es _poder hacer_: __
+
+Necesitás un lugar seguro para preguntar, practicar y hacer equipo.
+
+Ahora ¡a nivelar conceptos y que cada une trate de sacarles jugo!
+
+## ¿Por qué finanzas?
+
+- Afecta tus ahorros, negociaciones, oportunidades.
+- Inversores y empresas pueden ganar o perder mucho.
+- Podés vender la info o el asesoramiento.
+- Aprender ciencia de datos.
+
+## Datos para ganar
+
+__PELIGRO:__ muchas noticias engañosas o sesgadas por creencias o hasta fiaca.
+
+Mejor
+
+- Datos públicos: cotizaciones, Banco Central (casi todos los días), y tendencias (GCBA, asociaciones profesionales o empresariales).
+- Teoría para interpretarlos: hacé lo que sabés, tratá de saber cada vez más.
+
+__PELIGRO:__ muchos modelos económicos que cuyas predicciones NO se cumplen nunca.
+
+
+# ¿Aumenta o se devalúa?
+
+- Inflación, dólar, acciones
+- Propiedades
+- Salarios
+
+## Inflación, dólar, acciones
+
+```{r include=TRUE}
+p <- graficoSimpleAFecha(fechaMacriPre)
+ggplotly(p)
+```
+
+## Propiedades
+
+```{r}
+p	<- pPropM2amb2u %>% tidyr::gather("id","usd",-fecha)  %>% filter(id %in% c("Palermo", "Villa Crespo", "Belgrano", "Balvanera", "Constitución" , "Recoleta", "Villa Urquiza")) %>%
+  ggplot(.,aes(x=fecha,y=usd, color=id)) +
+  geom_line() +
+	ggtitle(paste("Deptos 2amb usados, dolares/m2")) +
+	ylab("dólares/m2")
+
+ggplotly(p)
+```
+
+## Salarios | (ej. de los que esperas que te compren)
+
+```{r include=TRUE}
+segmentoEPH <- 
+	left_join( 
+		dEPH15Caba %>% filter(as.numeric(decil)>=7),
+		pUSDMes, by= "fecha") %>%
+	mutate(ingreso_medio_usd= Media /usd)
+
+
+p <- segmentoEPH %>% 
+		ggplot(.,aes(x=fecha,y=ingreso_medio_usd,color=decil)) +
+  		geom_line() +
+			ggtitle(paste("Ingreso medio per capita en dólares por decil de la EPH CABA")) +
+			ylab("Ingreso medio en dólares")
+
+ggplotly(p)
+```
+
+
+
+# ¡Cashflow o Muerte!
+
+## Cashflow = Flujos de fondos,| Tu plan y tu guía
+
+Para poder conseguir lo que querés, cuando querés...
+
+![planilla de flujo de fondos](img/cf2a_pf.png)
+
+http://podemosaprender.org/wip/cf.html
+
+
+## Instrumentos de inversión
+
+__"Renta fija"__ (el deudor se compromete a una tasa fija)
+
+- Plazo fijo (tasa fija o UVA), prestamos, ¿y si necesito la plata antes?
+- Letras, futuros, además puedo vender antes en mercado secundario
+- Bonos, ademas van pagando en varias veces, duran años
+
+__¡OjO!__ Los fondos que _invierten_ en "renta fija" NO son de "renta fija"
+
+__"Renta variable"__ (no te garantizan nada, hasta podes perder)
+
+- acciones, fondos de inversión (liquidez en un par de días)
+- (fideicomisos)
+
+
+## Valor presente y Discounted Cashflow
+
+$$V_{pesente} = \frac{V_{futuro}}{(1 + tasa)^{periodos}}$$
+$$V_{p-cf} = \frac{CF_1}{(1+r)^{t_1}} + \frac{CF_2}{(1+r)^{t_2}} + \ldots$$
+__¡OjO!__ También hay que estimar cómo puede __variar la tasa__
+
+
+(Ver método para valuar "cualquier cosa", ej. Damodaran, http://pages.stern.nyu.edu/~adamodar/ )
+
+
+## ¿Efectivo, Finanzas o Bienes?
+
+__¡OjO!__ También hay que estimar cómo puede __variar la tasa__
+
+__CLAVE__ Liquidez
+
+__CLAVE__ ¿De que depende el valor "de mercado"?  
+(ej. carry trade, Soros vs. BoE, EMBI+, burbuja inmobiliaria...)
+
+
+# Modelos, Juegos y Dinero
+
+- ¿De que depende el valor "de mercado"?
+- Dinero = Deuda = "baile de la silla"
+- Estrategias
+
+## Efectivo y Finanzas vs. Bienes
+
+![How the Economic Machine Works, Dalio95](money_vs_goods_dalio.png)
+
+## ¿Mejor "fácil de hacer" o "comestible"? {.smaller}
+
+<div class="centered">
+![](money_vs_goods.png)
+</div>
+<br>
+Te dicen:
+
+- "El dinero _equivale_ a bienes, es un trueque _más cómodo_"
+- Hay un _equilibrio_ entre cantidad de dinero y bienes, los precios.
+
+Pero ¿y si es falso ese _equilibrio_ entre dinero y bienes?
+
+- ¿Qué pasa si alguien se puede endeudar sin límites y _comprar bienes_? 
+- ¿Los que producen _ahorran_ (o sea, "prestan" parte de esa deuda)?
+- ¿"De repente" se descubre que hay mucho más dinero/deuda que bienes?
+- ¿Resulta en una devaluación, o peor un "salvataje" selectivo?
+
+## OjO! "Inflación" de X bien {.smaller}
+
+![](sp-500-pe-ratio-price-to-earnings-chart-2018-10-27-macrotrends.png)
+
+https://www.macrotrends.net/2577/sp-500-pe-ratio-price-to-earnings-char
+https://en.wikipedia.org/wiki/Price%E2%80%93earnings_ratio
+
+## OjO! "Inflación" de X bien {.smaller}
+
+![](money_vs_goods_house_vs_earnings_uk.png)
+https://www.zerohedge.com/news/2017-12-20/uks-toxic-housing-mix
+
+## Subirse si sube, bajarse si baja
+
+Es una estrategia genérica, pero además como las burbujas se "pinchan"...
+
+- El __objetivo__ es adquirir bienes
+- La __estrategia__ es 
+   - _subirse_ al "dinero barato" para adquirirlos
+   - _bajarse_ cuando explota la burbuja
+
+En general, explotar los desfasajes de precios (y que no _te exploten_)
+
+## Pump & Dump, ejemplos
+
+- El Lobo de Wall Street
+- Deuda en USD > Compra Depto > Corralito > Paga con la mitad
+- Torta y vales
+
+# ¿Qué vamos a hacer hoy?
+
+- Trading automático
+- Más ejemplos con datos de Argentina
+- Modelos dinámicos
+- ¿Más propuestas?
+
+## Trading automático
+
+https://quantstrattrader.wordpress.com/
+
+https://www.investopedia.com/terms/d/drawdown.asp
+
+
+## Más ejemplos de Argentina
+
+http://podemosaprender.org/wip/Cambiario.html
+
+
+## Modelos dinámicos
+
+- Minsky, ~/devel/3p/minsky-models/ProfKeensModels/MinskyPrivateOnlyBreakdown.mky 
+
+- 0SimecolVignette
